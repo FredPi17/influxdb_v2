@@ -1,0 +1,69 @@
+version: "3.1"
+
+networks:
+  influxdb:
+
+services:
+  influx:
+    container_name: graph_influx
+    restart: "no"
+    image: quay.io/influxdb/influxdb:2.0.0-beta
+    networks:
+      influxdb:
+        aliases:
+          - influxdb
+    command: ["--bolt-path=/var/lib/influxdb/influxd.bolt",
+              "--engine-path=/var/lib/influxdb/engine"]
+    volumes:
+    - $PWD/influx:/var/lib/influxdb
+    ports:
+    - 9999:9999
+
+  influx_setup:
+    image: quay.io/influxdb/influxdb:2.0.0-alpha
+    container_name: influx_setup
+    networks:
+      - influxdb
+    volumes:
+    - $PWD/docker.json:/docker.json
+    command: ["bash", "-c",
+              "sleep 9 \
+                  && influx setup \
+                  --host=http://influxdb:9999/ \
+                  --token=sdfsdfsdfsdf \
+                  --bucket=Home \
+                  --org=Fred-Home \
+                  --username=admin \
+                  --password=password \
+                  --force \
+                  && orgid=\"$$(influx org find --host=http://influxdb:9999 \
+                                                --name=Fred-Home \
+                                                --token=sdfsdfsdfsdf \
+                            | tail -n1 \
+                            | awk -F' ' '{print $$1}')\" \
+                  && influx bucket create \
+                  --host=http://influxdb:9999/ \
+                  --token=sdfsdfsdfsdf \
+                  --name=Home-Data \
+                  --org-id=$$orgid \
+                  && influx pkg new \
+                  --host=http://influxdb:9999/ \
+                  --token=sdfsdfsdfsdf \
+                  --name=Docker \
+                  --file=/docker.json \
+                  --version=1.0 \
+                  --description=\"Test de docker\" \
+                  && sleep infinity"]
+    depends_on:
+      - influx
+
+  telegraf_docker:
+    image: telegraf
+    container_name: telegraf_docker
+    networks:
+      - influxdb
+    volumes:
+      - $PWD/docker_collection.conf:/etc/telegraf/telegraf.conf
+      - /var/run/docker.sock:/var/run/docker.sock
+    environment:
+      - DOCKER_API_KEY=sdfsdfsdfsdf
