@@ -31,7 +31,6 @@ services:
                   && influx setup \
                   --host=http://influxdb:9999/ \
                   --token=sdfsdfsdfsdf \
-                  --bucket=Home \
                   --org=Fred-Home \
                   --username=admin \
                   --password=password \
@@ -46,13 +45,21 @@ services:
                   --token=sdfsdfsdfsdf \
                   --name=Home-Data \
                   --org-id=$$orgid \
-                  && influx pkg new \
+                  && influx pkg \
                   --host=http://influxdb:9999/ \
                   --token=sdfsdfsdfsdf \
-                  --name=Docker \
                   --file=/docker.json \
-                  --version=1.0 \
-                  --description=\"Test de docker\" \
+                  --org=Fred-Home \
+                  && influx pkg \
+                  --host=http://influxdb:9999/ \
+                  --token=sdfsdfsdfsdf \
+                  --file=/influxdb_2.0_oss_metrics.json \
+                  --org=Fred-Home \
+                  && influx pkg \
+                  --host=http://influxdb:9999/ \
+                  --token=sdfsdfsdfsdf \
+                  --file=/system.json \
+                  --org=Fred-Home \
                   && sleep infinity"]
     depends_on:
       - influx
